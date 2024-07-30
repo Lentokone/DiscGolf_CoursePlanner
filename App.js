@@ -1,84 +1,124 @@
-import React, {useState} from 'react';
-import { View, Text, Button, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet, TextInput } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import WebView from 'react-native-webview';
 
-const Stack = createNativeStackNavigator();
+const App = () => {
+  const [currentScreen, setCurrentScreen] = useState('Home');
 
-const App=()=>{
+  const [apina, apinasetter] = useState("");
+  const [testilista, listasetter] = useState([]);
+
+  const apinahandler = enteredText => {
+    apinasetter(enteredText);
+  }
+
+  const tListHandler = () => 
+  {
+    listasetter(testilista => [...testilista, apina]);
+  }
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'Home':
+        return <HomeScreen apina={apina} apinahandler={apinahandler} tListHandler={tListHandler}/>;
+      case 'Details':
+        return <DetailsScreen testilista={testilista}/>;
+      case 'Image':
+        return <ImageScreen />;
+      default:
+        return <HomeScreen />;
+    }
+  };
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Details" component={DetailsScreen} />
-        <Stack.Screen name="Image" component={ImageScreen} />
-      </Stack.Navigator>
+      <View style={styles.container}>
+        <View style={styles.mainContent}>
+          {renderScreen()}
+        </View>
+        <View style={styles.navbar}>
+          <Button title="Home" onPress={() => setCurrentScreen('Home')} />
+          <Button title="Details" onPress={() => setCurrentScreen('Details')} />
+          <Button title="Image" onPress={() => setCurrentScreen('Image')} />
+        </View>
+      </View>
     </NavigationContainer>
   );
-}
+};
 
-const HomeScreen=(props)=>{
-  return (
-    <View style={{flex:1}}>
-      <View style={{ flex: 8, alignItems: 'center', justifyContent: 'center' }}>
-        <Text>Home Screen</Text>
-      </View>
-      <NavButtons params={props}/>
-    </View>
-  );
-}
-const DetailsScreen=(props)=>{
-  return (
-    <View style={{flex:1}}>
-      <View style={{ flex: 8, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 20,}}>Details Screen</Text>
-      </View>
-      <NavButtons params={props}/>
-    </View>
-  );
-}
-const ImageScreen=(props)=>{
-  return (
-    <View style={{flex:1}}>
-      <View style={{ flex: 8, alignItems: 'center', justifyContent: 'center' }}>
-        <View style={styles.imageContainer}>
-          <Text>Apina</Text>
-        </View> 
-      </View>
-      <NavButtons params={props}/>
-    </View>
-  );
-}
+const HomeScreen = ({apina, apinahandler, tListHandler}) => (
+  <View style={styles.screenContainer}>
+    <Text style={styles.screenTitle}>Home Screen</Text>
+    <TextInput value={apina} onChangeText={apinahandler}>
 
-const NavButtons=({params})=>{
-  return(
-    <View style={styles.navbuttonstyle}>
-      <Button onPress={()=>params.navigation.navigate("Details")} title="Details"/>
-      <Button onPress={()=>params.navigation.navigate("Home")} title="Home"/>
-      <Button onPress={()=>params.navigation.navigate("Image")} title="Image"/>
-    </View>
-  );
-}
+    </TextInput>
+    <Button title='Apina' onPress={tListHandler}></Button>
+  </View>
+);
 
-const styles=StyleSheet.create({
-  navbuttonstyle:{
-    flex:2,
-    flexDirection:"row",
-    backgroundColor:"#def",
-    alignItems:"center",
-    justifyContent:"space-around",    
+const DetailsScreen = ({testilista}) => (
+  <View style={styles.screenContainer}>
+    <Text style={styles.screenTitle}>Details Screen</Text>
+    {testilista.length === 0 ? (
+      <Text>No items in the list</Text>
+    ) : (
+      testilista.map((item, index) => (
+        <View style={styles.listItemStyle} key={index}>
+          <Text>
+            {index + 1}: {item}
+          </Text>
+        </View>
+      ))
+    )}
+  </View>
+);
+
+const ImageScreen = () => (
+  <View style={styles.screenContainer}>
+    <WebView
+      source={{ uri: 'file:///android_asset/leaflet.html' }} // For Android
+      // source={{ uri: 'file:///path/to/your/assets/leaflet.html' }} // For iOS
+      style={styles.webvieww}
+      onError={(error) => console.error('WebView error:', error)}
+      onLoadStart={() => console.log('WebView loading started')}
+      onLoadEnd={() => console.log('WebView loading ended')}
+    />
+  </View>
+);
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
   },
-  imageContainer:{
-    height:200,
-    width:'50%',
-    borderRadius:200,
-    overflow:'hidden',
-    borderWidth:3,
-    borderColor:'red',
+  mainContent: {
+    flex: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  image:{
-    height:'100%',
-    width:'100%'
+  webvieww: {
+    borderColor: 'red',
+    borderWidth: 150,
+    padding: 30,
+  },
+  navbar: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#def',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  screenContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: "100%",
+    borderColor: 'red',
+    borderWidth: 5,
+  },
+  screenTitle: {
+    fontSize: 20,
   },
 });
+
 export default App;
