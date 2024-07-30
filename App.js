@@ -77,7 +77,7 @@ const DetailsScreen = ({testilista}) => (
 const ImageScreen = () => (
   <View style={styles.screenContainer}>
     <WebView
-      source={{ uri: 'file:///android_asset/leaflet.html' }} // For Android
+      source={{ uri: 'file:///android_asset/monkey.html' }} // For Android
       // source={{ uri: 'file:///path/to/your/assets/leaflet.html' }} // For iOS
       style={styles.webvieww}
       onError={(error) => console.error('WebView error:', error)}
@@ -97,9 +97,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   webvieww: {
-    borderColor: 'red',
-    borderWidth: 150,
-    padding: 30,
+    flex: 1,
+    minWidth: '100%', //Note to self. Jostain vitun syystä webview ei hyväksy width: prosentteja. Piti pakottaa min-width koko
+    height: '100%',
+    borderWidth: 20,
+    borderColor: 'hotpink'
   },
   navbar: {
     flex: 1,
@@ -112,9 +114,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    width: "100%",
-    borderColor: 'red',
-    borderWidth: 5,
+    width: '100%',
   },
   screenTitle: {
     fontSize: 20,
