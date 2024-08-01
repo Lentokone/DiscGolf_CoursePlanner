@@ -1,14 +1,36 @@
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, TextInput } from 'react-native';
+import { View, Text, Button, StyleSheet, TextInput, Dimensions } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+
 import WebView from 'react-native-webview';
 
+const { width, height } = Dimensions.get('window');
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
 
   const [apina, apinasetter] = useState("");
   const [testilista, listasetter] = useState([]);
 
+  //? Tänne kaksi listaa
+  //? Yksi jossa on kaikki, joka sitten tallennetaan kanssa. biglista{name: "Perkele", list: {ratalista[]} }
+
+  const discGolfCourse =
+  {
+    "ID": "89",
+    "ParentID": "3813",
+    "Name": "DGP-9 (2013)",
+    "Fullname": "Karhumäki DiscGolfPark &rarr; DGP-9 (2013)",
+    "Type": "2",
+    "CountryCode": "FI",
+    "Area": "Etelä-Karjala",
+    "City": "Imatra",
+    "Location": null,
+    "X": "61.20124441148789",
+    "Y": "28.741837766750848",
+    "Enddate": "2019-02-19"
+  };
+  //! Eli varmaankin iso lista
+  //! Ja siihen vaan lisätään {name: "Courses to go to", list: {}}
   const apinahandler = enteredText => {
     apinasetter(enteredText);
   }
@@ -24,8 +46,8 @@ const App = () => {
         return <HomeScreen apina={apina} apinahandler={apinahandler} tListHandler={tListHandler}/>;
       case 'Details':
         return <DetailsScreen testilista={testilista}/>;
-      case 'Image':
-        return <ImageScreen />;
+      case 'Map':
+        return <MapScreen />;
       default:
         return <HomeScreen />;
     }
@@ -40,7 +62,7 @@ const App = () => {
         <View style={styles.navbar}>
           <Button title="Home" onPress={() => setCurrentScreen('Home')} />
           <Button title="Details" onPress={() => setCurrentScreen('Details')} />
-          <Button title="Image" onPress={() => setCurrentScreen('Image')} />
+          <Button title="Map" onPress={() => setCurrentScreen('Map')} />
         </View>
       </View>
     </NavigationContainer>
@@ -74,10 +96,10 @@ const DetailsScreen = ({testilista}) => (
   </View>
 );
 
-const ImageScreen = () => (
+const MapScreen = () => (
   <View style={styles.screenContainer}>
     <WebView
-      source={{ uri: 'file:///android_asset/monkey.html' }} // For Android
+      source={{ uri: 'file:///android_asset/leaflet.html' }} // For Android
       // source={{ uri: 'file:///path/to/your/assets/leaflet.html' }} // For iOS
       style={styles.webvieww}
       onError={(error) => console.error('WebView error:', error)}
@@ -97,11 +119,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   webvieww: {
-    flex: 1,
+    flex: 0,
     minWidth: '100%', //Note to self. Jostain vitun syystä webview ei hyväksy width: prosentteja. Piti pakottaa min-width koko
     height: '100%',
-    borderWidth: 20,
-    borderColor: 'hotpink'
   },
   navbar: {
     flex: 1,
@@ -115,6 +135,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+    borderWidth: 0,
+    borderColor: 'hotpink',
   },
   screenTitle: {
     fontSize: 20,
