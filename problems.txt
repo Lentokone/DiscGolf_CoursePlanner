@@ -5,3 +5,16 @@ Problems::
 Problem with the maps, since they want the google map api or smthng
 
 Fetching the rest api data, because there is 2693 disc golf courses in Finland that are active (or did not have a date in the Enddate in the api data)
+
+Problem with the map once again.
+The rest api data is fetched properly and filtered properly.
+It is converted into this for simplicity for the map markers.
+const courseMarkers = route.map(course => ({
+    lat: parseFloat(course.X),
+    lng: parseFloat(course.Y),
+    name: course.Name
+  }));
+The problem was that it made markers, but for example, it made only 6, even though the data gives out 13 good x and y locations. (Good meaning that neither of them are null).
+Found the problem by reading the output of a console.log() and I realized that, it makes the markers properly, but if there is a course with x or y as null, it will then stop or break, even though there would be valid locations after the null ones. ( For example course 1 has x as 20 and y as 30, course 2 has x as null and y as null, course 3 has x as 22 and y as 32, and it will only make a marker for the first course).
+
+Kristiinankaupunki sijainti ihan vituillaan

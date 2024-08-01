@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, TextInput, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { Dropdown } from 'react-native-element-dropdown';
 
 import WebView from 'react-native-webview';
 
-const { width, height } = Dimensions.get('window');
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
 
-  const [testilista, listasetter] = useState([]);
   const [courseList, cListsetter] = useState([])
-  
   const [currentPage, setCurrentPage] = useState(0)
   const itemsPerPage = 20;
   
@@ -59,7 +57,7 @@ const App = () => {
       case 'Details':
         return <CourseDetailsScreen Previous={handlePrevious} Next={handleNext} courses={displayedItems} fetchData={fetchCourseData}/>;
       case 'Map':
-        return <MapScreen route={displayedItems}/>;
+        return <MapScreen DGcourses={courseList}/>;
       default:
         return <HomeScreen />;
     }
@@ -81,11 +79,45 @@ const App = () => {
   );
 };
 
-const HomeScreen = () => (
-  <View style={styles.screenContainer}>
-    <Text style={styles.screenTitle}>Home Screen</Text>
-  </View>
-);
+const HomeScreen = () => {
+  const data = [
+    { label: 'Item 1', value: '1' },
+    { label: 'Item 2', value: '2' },
+    { label: 'Item 3', value: '3' },
+    { label: 'Item 4', value: '4' },
+    { label: 'Item 5', value: '5' },
+    { label: 'Item 6', value: '6' },
+    { label: 'Item 7', value: '7' },
+    { label: 'Item 8', value: '8' },
+  ];
+
+  const [value, setValue] = useState(null);
+  const [isFocus, setIsFocus] = useState(false);
+
+  return (
+    <View style={styles.screenContainer}>
+      <Text style={styles.screenTitle}>Home Screen</Text>
+      <View style={styles.dropDown}>
+        <Dropdown
+          style={[styles.dropdown, isFocus && { borderColor: 'blue' }]}
+          placeholderStyle={styles.placeholderStyle}
+          selectedTextStyle={styles.selectedTextStyle}
+          data={data}
+          labelField="label"
+          valueField="value"
+          placeholder={!isFocus ? 'Select item' : '...'}
+          value={value}
+          onFocus={() => setIsFocus(true)}
+          onBlur={() => setIsFocus(false)}
+          onChange={item => {
+            setValue(item.value);
+            setIsFocus(false);
+          }}
+        />
+      </View>
+    </View>
+  );
+};
 
 const CourseDetailsScreen = ({Previous, Next, courses, fetchData}) => (
   <View style={styles.screenContainer}>
@@ -94,39 +126,49 @@ const CourseDetailsScreen = ({Previous, Next, courses, fetchData}) => (
       <Button title="Fetch Courses" onPress={fetchData} />
       <Button title='Next'onPress={Next}/>
     </View>
-      <ScrollView style={styles.scrollView}>
+    <View style={styles.scrollView}>
+      <ScrollView>
         {courses.map(course => (
           <TouchableOpacity
-            key={course.ID}
-            onPress={() => navigation.navigate('CourseDetail', { course })}
+          key={course.ID}
+          onPress={() => navigation.navigate('CourseDetail', { course })}
           >
             <View style={styles.courseItem}>
-              <Text style={styles.courseName}>{course.Name} - {course.X} </Text>
+              <Text style={styles.courseName}>{course.Name}</Text>
               <Button
                 title="Add to List"
                 onPress={() => handleAddToCourseList('Courses to go to', course)}
-              />
+                />
             </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
+    </View>
   </View>
 );
 
-const DetailsScreenButton = () => {
-  fetchCourseData();
-};
 
+const MapScreen = ({ DGcourses }) => {
+  // Define the bounds for Finland
+  const bounds = [
+    [60.0, 20.0], // Southwest corner
+    [71.5, 31.5]  // Northeast corner
+  ];
 
-
-const MapScreen = ({ route }) => {
   // Extract courses from the route parameters
   // Convert courses data to JSON string for WebView
-  const courseMarkers = route.map(course => ({
+  const courseMarkers = DGcourses
+  .filter(course => course.X && course.Y)
+  .map(course => ({
     lat: parseFloat(course.X),
     lng: parseFloat(course.Y),
     name: course.Name
-  }));
+  }))
+  //This filters the courses that go out of bounds. Also a certain course that for some reason is in the middle of the ocean.
+  .filter(course => 
+    course.lat >= bounds[0][0] && course.lat <= bounds[1][0] && course.lat != 63.63193454567187 &&
+    course.lng >= bounds[0][1] && course.lng <= bounds[1][1] && course.lng != 21.477857921289853
+  );
   const courseMarkersJson = JSON.stringify(courseMarkers);
   
   const injectedJavaScript = `
@@ -180,7 +222,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    borderWidth: 0,
+    borderWidth: 1,
     borderColor: 'hotpink',
   },
   screenTitle: {
@@ -188,7 +230,27 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-  }
+  },
+  scrollView: {
+    flex: 1,
+    height: '100%',
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropDown: {
+    width: "80%"
+  },
+  courseItem: {
+    marginTop: 5,
+    marginBottom: 5,
+    padding: 5,
+    backgroundColor: 'lightgray',
+    width: "100%"
+  },
+  courseName: {
+    textAlign: 'center',
+  },
 });
 
 export default App;
