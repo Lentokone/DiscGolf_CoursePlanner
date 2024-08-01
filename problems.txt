@@ -1,0 +1,7 @@
+This is for the explanation in the end.
+
+Problems::
+
+Problem with the maps, since they want the google map api or smthng
+
+Fetching the rest api data, because there is 2693 disc golf courses in Finland that are active (or did not have a date in the Enddate in the api data)
