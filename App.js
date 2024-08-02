@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, TextInput, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Dropdown } from 'react-native-element-dropdown';
 
 import WebView from 'react-native-webview';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
+
+  const [userLists, setuserLists] = useState([]);
+  const [newListName, setNewListName] = useState('');
 
   const [courseList, cListsetter] = useState([])
   const [currentPage, setCurrentPage] = useState(0)
@@ -16,6 +20,33 @@ const App = () => {
   const endIndex = startIndex + itemsPerPage;
   
   const displayedItems = courseList.slice(startIndex, endIndex);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const handleUserListAdd = () => {
+    if (newListName.trim() !== '') {
+      setuserLists([...userLists, { name: newListName, courses: [] }]);
+      setNewListName('');
+    }
+  };
+
+  const handleRemoveList = (index) => {
+    setuserLists(userLists.filter((_, i) => i !== index));
+    if (selectedListIndex === index) {
+      setSelectedListIndex(null);
+    }
+  };
+
+  const handleListChange = (item) => {
+    setSelectedListIndex(item.value);
+  };
+
+  const handleAddCourseToList = (course) => {
+    if (selectedListIndex !== null) {
+      const updatedLists = [...userLists];
+      updatedLists[selectedListIndex].courses.push(course);
+      setuserLists(updatedLists);
+    }
+  };
+
   const handleNext = () => {
     if (endIndex < courseList.length) {
       setCurrentPage(currentPage + 1);
@@ -53,13 +84,15 @@ const App = () => {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'Home':
-        return <HomeScreen/>;
+        return <HomeScreen listings={displayedItems} screenChanging={setCurrentScreen} selectedCourse={selectedCourse} setSelectedCourse={setSelectedCourse}/>;
       case 'Details':
         return <CourseDetailsScreen Previous={handlePrevious} Next={handleNext} courses={displayedItems} fetchData={fetchCourseData}/>;
       case 'Map':
         return <MapScreen DGcourses={courseList}/>;
+      case 'ListManagement':
+        return <ListManagementScreen selectedList={selectedCourse}/>;
       default:
-        return <HomeScreen />;
+        return <HomeScreen listings={displayedItems}/>;
     }
   };
 
@@ -79,30 +112,32 @@ const App = () => {
   );
 };
 
-const HomeScreen = () => {
-  const data = [
-    { label: 'Item 1', value: '1' },
-    { label: 'Item 2', value: '2' },
-    { label: 'Item 3', value: '3' },
-    { label: 'Item 4', value: '4' },
-    { label: 'Item 5', value: '5' },
-    { label: 'Item 6', value: '6' },
-    { label: 'Item 7', value: '7' },
-    { label: 'Item 8', value: '8' },
-  ];
-
+const HomeScreen = ({listings, screenChanging, setSelectedCourse, selectedCourse}) => {
+  
+  const paskareact = () => {
+    screenChanging('ListManagement')
+  }
+  
+  const [label, setLabel] = useState(null);
   const [value, setValue] = useState(null);
   const [isFocus, setIsFocus] = useState(false);
 
+  const dropdownData = listings?.map(course => ({
+    label: course.Name,
+    value: course.ID,
+    course: course
+  }));
+
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Home Screen</Text>
+      <Text style={styles.screenTitle}>Course lists</Text>
+      <Button title='Manage lists' onPress={() => paskareact()}></Button>
       <View style={styles.dropDown}>
         <Dropdown
           style={[styles.dropdown, isFocus && { borderColor: 'blue' }]}
           placeholderStyle={styles.placeholderStyle}
           selectedTextStyle={styles.selectedTextStyle}
-          data={data}
+          data={dropdownData || []}
           labelField="label"
           valueField="value"
           placeholder={!isFocus ? 'Select item' : '...'}
@@ -110,11 +145,16 @@ const HomeScreen = () => {
           onFocus={() => setIsFocus(true)}
           onBlur={() => setIsFocus(false)}
           onChange={item => {
-            setValue(item.value);
+            setLabel(item.label)
+            setValue(item.value)
+            setSelectedCourse(item.course);
             setIsFocus(false);
           }}
         />
       </View>
+      <Text>
+        {selectedCourse ? `Selected Course: ${selectedCourse.Name}` : 'No course selected'}
+      </Text>
     </View>
   );
 };
@@ -196,6 +236,21 @@ const MapScreen = ({ DGcourses }) => {
   );
 };
 
+
+const ListManagementScreen = ({selectedList}) => {
+return (
+  <View style={styles.screenContainer}>
+    <Text>{selectedList.Name}</Text>
+    <Text>Apina</Text>
+    <Text>Apina</Text>
+    <Text>Apina</Text>
+    <Text>Apina</Text>
+    <Text>Apina</Text>
+    <Text>Apina</Text>
+    <Text>Apina</Text>
+  </View>)
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -247,6 +302,12 @@ const styles = StyleSheet.create({
     padding: 5,
     backgroundColor: 'lightgray',
     width: "100%"
+  },
+  dropdown: {
+    padding: 5,
+    backgroundColor: 'lightblue',
+    borderWidth: 2,
+    borderColor: 'hotpink'
   },
   courseName: {
     textAlign: 'center',
