@@ -1,56 +1,57 @@
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, TextInput, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Button, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Dropdown } from 'react-native-element-dropdown';
-
 import WebView from 'react-native-webview';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Home');
-
-  const [userLists, setuserLists] = useState([]);
+  const [allUserLists, setAllUserLists] = useState([]);
+  const [userList, setUserList] = useState([]);
   const [newListName, setNewListName] = useState('');
-
-  const [courseList, cListsetter] = useState([])
-  const [currentPage, setCurrentPage] = useState(0)
+  const [selectedList, setSelectedList] = useState(null);
+  const [courseList, setCourseList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 20;
-  
+
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  
   const displayedItems = courseList.slice(startIndex, endIndex);
-  const [selectedCourse, setSelectedCourse] = useState(null);
+
   const handleUserListAdd = () => {
     if (newListName.trim() !== '') {
-      setuserLists([...userLists, { name: newListName, courses: [] }]);
+      setUserList([...userList, { name: newListName, courses: [] }]);
       setNewListName('');
     }
   };
 
   const handleRemoveList = (index) => {
-    setuserLists(userLists.filter((_, i) => i !== index));
-    if (selectedListIndex === index) {
-      setSelectedListIndex(null);
+    setUserList(userList.filter((_, i) => i !== index));
+    if (selectedList?.index === index) {
+      setSelectedList(null);
     }
   };
 
   const handleListChange = (item) => {
-    setSelectedListIndex(item.value);
+    setSelectedList(userList[item.value]);
   };
 
   const handleAddCourseToList = (course) => {
-    if (selectedListIndex !== null) {
-      const updatedLists = [...userLists];
-      updatedLists[selectedListIndex].courses.push(course);
-      setuserLists(updatedLists);
+    if (selectedList) {
+      const updatedLists = allUserLists.map((list, index) => {
+        if (index === selectedList.index) {
+          return { ...list, list: [...list.list, course] };
+        }
+        return list;
+      });
+      setAllUserLists(updatedLists);
     }
   };
 
   const handleNext = () => {
     if (endIndex < courseList.length) {
       setCurrentPage(currentPage + 1);
-      console.log(displayedItems)
     }
   };
 
@@ -60,39 +61,46 @@ const App = () => {
     }
   };
 
-  //? Tänne kaksi listaa
-  //? Yksi jossa on kaikki, joka sitten tallennetaan kanssa. biglista{name: "Perkele", list: {ratalista[]} }
-
-  
   const fetchCourseData = async () => {
     try {
       const response = await fetch('https://discgolfmetrix.com/api.php?content=courses_list&country_code=FI');
       const data = await response.json();
-      const filteredData = data.courses.filter(course => course.Enddate === null)
-      cListsetter(filteredData);
+      const filteredData = data.courses.filter(course => course.Enddate === null);
+      setCourseList(filteredData);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
-  
-
-  //! Eli varmaankin iso lista
-  //! Ja siihen vaan lisätään {name: "Courses to go to", list: {}}
-  
-  
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'Home':
-        return <HomeScreen listings={displayedItems} screenChanging={setCurrentScreen} selectedCourse={selectedCourse} setSelectedCourse={setSelectedCourse}/>;
+        return (
+          <HomeScreen
+            listings={displayedItems}
+            screenChanging={setCurrentScreen}
+            userList={allUserLists}
+            selectedList={selectedList}
+            setSelectedList={setSelectedList}
+          />
+        );
       case 'Details':
-        return <CourseDetailsScreen Previous={handlePrevious} Next={handleNext} courses={displayedItems} fetchData={fetchCourseData}/>;
+        return (
+          <CourseDetailsScreen
+            Previous={handlePrevious}
+            Next={handleNext}
+            courses={displayedItems}
+            fetchData={fetchCourseData}
+            selectedList={selectedList}
+            handleListAdd={handleAddCourseToList}
+          />
+        );
       case 'Map':
-        return <MapScreen DGcourses={courseList}/>;
+        return <MapScreen DGcourses={courseList} />;
       case 'ListManagement':
-        return <ListManagementScreen selectedList={selectedCourse}/>;
+        return <ListManagementScreen allUserLists={allUserLists} setAllUserLists={setAllUserLists} />;
       default:
-        return <HomeScreen listings={displayedItems}/>;
+        return <HomeScreen listings={displayedItems} />;
     }
   };
 
@@ -112,105 +120,109 @@ const App = () => {
   );
 };
 
-const HomeScreen = ({listings, screenChanging, setSelectedCourse, selectedCourse}) => {
-  
-  const paskareact = () => {
-    screenChanging('ListManagement')
-  }
-  
+const HomeScreen = ({ listings, screenChanging, userList, selectedList, setSelectedList }) => {
   const [label, setLabel] = useState(null);
   const [value, setValue] = useState(null);
   const [isFocus, setIsFocus] = useState(false);
 
-  const dropdownData = listings?.map(course => ({
-    label: course.Name,
-    value: course.ID,
-    course: course
+  const dropdownData = userList.map((list, index) => ({
+    label: list.name,
+    value: index,
   }));
+
+  const buttonConst = () => {
+    screenChanging('ListManagement');
+  };
 
   return (
     <View style={styles.screenContainer}>
       <Text style={styles.screenTitle}>Course lists</Text>
-      <Button title='Manage lists' onPress={() => paskareact()}></Button>
+      <Button title='Manage lists' onPress={buttonConst} />
+
       <View style={styles.dropDown}>
         <Dropdown
           style={[styles.dropdown, isFocus && { borderColor: 'blue' }]}
           placeholderStyle={styles.placeholderStyle}
           selectedTextStyle={styles.selectedTextStyle}
-          data={dropdownData || []}
+          data={dropdownData}
           labelField="label"
           valueField="value"
-          placeholder={!isFocus ? 'Select item' : '...'}
+          placeholder={!isFocus ? 'Select list' : '...'}
           value={value}
           onFocus={() => setIsFocus(true)}
           onBlur={() => setIsFocus(false)}
           onChange={item => {
-            setLabel(item.label)
-            setValue(item.value)
-            setSelectedCourse(item.course);
+            const selectedIndex = item.value;
+            setLabel(item.label);
+            setValue(item.value);
+            setSelectedList({ ...userList[selectedIndex], index: selectedIndex });
             setIsFocus(false);
           }}
         />
       </View>
-      <Text>
-        {selectedCourse ? `Selected Course: ${selectedCourse.Name}` : 'No course selected'}
-      </Text>
+
+      {selectedList && (
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          {selectedList.list.map((course, index) => (
+            <View key={index} style={styles.courseItem}>
+              <Text style={styles.courseName}>{course.Name}</Text>
+              <Text>{course.City}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 };
 
-const CourseDetailsScreen = ({Previous, Next, courses, fetchData}) => (
+const CourseDetailsScreen = ({ Previous, Next, courses, fetchData, selectedList, handleListAdd }) => (
   <View style={styles.screenContainer}>
     <View style={styles.buttonRow}>
-      <Button title='Prev' onPress={Previous}/>
+      <Button title='Prev' onPress={Previous} />
       <Button title="Fetch Courses" onPress={fetchData} />
-      <Button title='Next'onPress={Next}/>
+      <Button title='Next' onPress={Next} />
     </View>
-    <View style={styles.scrollView}>
-      <ScrollView>
-        {courses.map(course => (
-          <TouchableOpacity
+    <ScrollView style={styles.scrollView}>
+      {courses.map(course => (
+        <TouchableOpacity
           key={course.ID}
-          onPress={() => navigation.navigate('CourseDetail', { course })}
-          >
-            <View style={styles.courseItem}>
-              <Text style={styles.courseName}>{course.Name}</Text>
-              <Button
-                title="Add to List"
-                onPress={() => handleAddToCourseList('Courses to go to', course)}
-                />
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+          // Assuming you need navigation for CourseDetail
+          onPress={() => console.log('Navigate to Course Detail')}
+        >
+          <View style={styles.courseItem}>
+            <Text style={styles.courseName}>{course.Name}</Text>
+            <Text>{course.City}</Text>
+            <Button
+              title="Add to List"
+              onPress={() => handleListAdd(course)}
+            />
+          </View>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
   </View>
 );
 
-
 const MapScreen = ({ DGcourses }) => {
-  // Define the bounds for Finland
   const bounds = [
-    [60.0, 20.0], // Southwest corner
-    [71.5, 31.5]  // Northeast corner
+    [60.0, 20.0],
+    [71.5, 31.5]
   ];
 
-  // Extract courses from the route parameters
-  // Convert courses data to JSON string for WebView
   const courseMarkers = DGcourses
-  .filter(course => course.X && course.Y)
-  .map(course => ({
-    lat: parseFloat(course.X),
-    lng: parseFloat(course.Y),
-    name: course.Name
-  }))
-  //This filters the courses that go out of bounds. Also a certain course that for some reason is in the middle of the ocean.
-  .filter(course => 
-    course.lat >= bounds[0][0] && course.lat <= bounds[1][0] && course.lat != 63.63193454567187 &&
-    course.lng >= bounds[0][1] && course.lng <= bounds[1][1] && course.lng != 21.477857921289853
-  );
+    .filter(course => course.X && course.Y)
+    .map(course => ({
+      lat: parseFloat(course.X),
+      lng: parseFloat(course.Y),
+      name: course.Name
+    }))
+    .filter(course =>
+      course.lat >= bounds[0][0] && course.lat <= bounds[1][0] &&
+      course.lng >= bounds[0][1] && course.lng <= bounds[1][1]
+    );
+
   const courseMarkersJson = JSON.stringify(courseMarkers);
-  
+
   const injectedJavaScript = `
     (function() {
       if (typeof window !== 'undefined') {
@@ -224,7 +236,6 @@ const MapScreen = ({ DGcourses }) => {
     <View style={styles.screenContainer}>
       <WebView
         source={{ uri: 'file:///android_asset/leaflet.html' }} // For Android
-        // source={{ uri: 'file:///path/to/your/assets/leaflet.html' }} // For iOS
         injectedJavaScript={injectedJavaScript}
         onMessage={(event) => console.log('WebView message:', event.nativeEvent.data)}
         style={styles.webvieww}
@@ -236,20 +247,45 @@ const MapScreen = ({ DGcourses }) => {
   );
 };
 
+const ListManagementScreen = ({ allUserLists, setAllUserLists }) => {
+  const [newListName, setNewListName] = useState('');
 
-const ListManagementScreen = ({selectedList}) => {
-return (
-  <View style={styles.screenContainer}>
-    <Text>{selectedList.Name}</Text>
-    <Text>Apina</Text>
-    <Text>Apina</Text>
-    <Text>Apina</Text>
-    <Text>Apina</Text>
-    <Text>Apina</Text>
-    <Text>Apina</Text>
-    <Text>Apina</Text>
-  </View>)
-}
+  const handleAddUserMadeList = () => {
+    if (newListName.trim() !== '') {
+      setAllUserLists(prevLists => [
+        ...prevLists,
+        { name: newListName, list: [] }
+      ]);
+      setNewListName('');
+    }
+  };
+
+  const handleRemoveUserMadeList = (index) => {
+    setAllUserLists(prevLists => prevLists.filter((_, i) => i !== index));
+  };
+
+  return (
+    <View style={styles.screenContainer}>
+      <View style={styles.Management}>
+        <TextInput
+          style={styles.input}
+          placeholder="List Name"
+          value={newListName}
+          onChangeText={setNewListName}
+        />
+        <Button title='Add List' onPress={handleAddUserMadeList} />
+      </View>
+      <ScrollView style={styles.scrollView}>
+        {allUserLists.map((list, index) => (
+          <View key={index} style={styles.listItem}>
+            <Text style={styles.listName}>{list.name}</Text>
+            <Button title="Delete" onPress={() => handleRemoveUserMadeList(index)} />
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -261,8 +297,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   webvieww: {
-    flex: 0,
-    minWidth: '100%',
+    flex: 1,
+    width: '100%',
     height: '100%',
   },
   navbar: {
@@ -277,8 +313,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    borderWidth: 1,
-    borderColor: 'hotpink',
+  },
+  Management: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 5,
+    width: '80%',
+  },
+  listItem: {
+    marginTop: 5,
+    marginBottom: 5,
+    padding: 5,
+    backgroundColor: 'lightgray',
+    width: "100%",
+  },
+  listName: {
+    fontSize: 20
   },
   screenTitle: {
     fontSize: 20,
@@ -288,10 +338,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    height: '100%',
     width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   dropDown: {
     width: "80%"
@@ -301,16 +348,17 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     padding: 5,
     backgroundColor: 'lightgray',
-    width: "100%"
+    width: "100%",
+  },
+  courseName: {
+    textAlign: 'center',
+    fontSize: 20,
   },
   dropdown: {
     padding: 5,
     backgroundColor: 'lightblue',
     borderWidth: 2,
     borderColor: 'hotpink'
-  },
-  courseName: {
-    textAlign: 'center',
   },
 });
 
