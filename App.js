@@ -141,8 +141,26 @@ const HomeScreen = ({ listings, screenChanging, userList, selectedList, setSelec
   useEffect(() => {
     if (selectedList) {
       setValue(selectedList.index); // Ensure value is set to the selected list index
+      setLabel(selectedList.name);
+      setSelectedList({ ...userList[selectedList.index], index: selectedList.index });
     }
-  }, [selectedList]);
+  }, []);
+
+  const renderCourseList = (selectedList) => {
+    return (
+      selectedList && (
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          {selectedList.list.map((course, index) => (
+            <View key={index} style={styles.courseItem}>
+              <Text style={styles.courseName}>{course.Name}</Text>
+              <Text>{course.City}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )
+    );
+  };
+  
 
   return (
     <View style={styles.screenContainer}>
@@ -173,16 +191,7 @@ const HomeScreen = ({ listings, screenChanging, userList, selectedList, setSelec
         />
       </View>
 
-      {selectedList && (
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {selectedList.list.map((course, index) => (
-            <View key={index} style={styles.courseItem}>
-              <Text style={styles.courseName}>{course.Name}</Text>
-              <Text>{course.City}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      )}
+      {renderCourseList(selectedList)}
     </View>
   );
 };
