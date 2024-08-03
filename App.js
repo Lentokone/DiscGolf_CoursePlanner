@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,6 +11,7 @@ const App = () => {
   const [userList, setUserList] = useState([]);
   const [newListName, setNewListName] = useState('');
   const [selectedList, setSelectedList] = useState(null);
+  const [selectedListIndex, setSelectedListIndex] = useState(null);
   const [courseList, setCourseList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 20;
@@ -82,6 +83,8 @@ const App = () => {
             userList={allUserLists}
             selectedList={selectedList}
             setSelectedList={setSelectedList}
+            selectedListIndex={selectedListIndex}
+            setSelectedListIndex={setSelectedListIndex}
           />
         );
       case 'Details':
@@ -98,7 +101,7 @@ const App = () => {
       case 'Map':
         return <MapScreen DGcourses={courseList} />;
       case 'ListManagement':
-        return <ListManagementScreen allUserLists={allUserLists} setAllUserLists={setAllUserLists} />;
+        return <ListManagementScreen allUserLists={allUserLists} setAllUserLists={setAllUserLists} setSelectedList={setSelectedList}/>;
       default:
         return <HomeScreen listings={displayedItems} />;
     }
@@ -120,7 +123,7 @@ const App = () => {
   );
 };
 
-const HomeScreen = ({ listings, screenChanging, userList, selectedList, setSelectedList }) => {
+const HomeScreen = ({ listings, screenChanging, userList, selectedList, setSelectedList , selectedListIndex, setSelectedListIndex}) => {
   const [label, setLabel] = useState(null);
   const [value, setValue] = useState(null);
   const [isFocus, setIsFocus] = useState(false);
@@ -132,7 +135,14 @@ const HomeScreen = ({ listings, screenChanging, userList, selectedList, setSelec
 
   const buttonConst = () => {
     screenChanging('ListManagement');
+    console.log(selectedList)
   };
+
+  useEffect(() => {
+    if (selectedList) {
+      setValue(selectedList.index); // Ensure value is set to the selected list index
+    }
+  }, [selectedList]);
 
   return (
     <View style={styles.screenContainer}>
@@ -156,6 +166,8 @@ const HomeScreen = ({ listings, screenChanging, userList, selectedList, setSelec
             setLabel(item.label);
             setValue(item.value);
             setSelectedList({ ...userList[selectedIndex], index: selectedIndex });
+            setSelectedListIndex(selectedIndex);
+            console.log(selectedList)
             setIsFocus(false);
           }}
         />
@@ -217,8 +229,8 @@ const MapScreen = ({ DGcourses }) => {
       name: course.Name
     }))
     .filter(course =>
-      course.lat >= bounds[0][0] && course.lat <= bounds[1][0] &&
-      course.lng >= bounds[0][1] && course.lng <= bounds[1][1]
+      course.lat >= bounds[0][0] && course.lat <= bounds[1][0] && course.lat != 63.63193454567187 &&
+      course.lng >= bounds[0][1] && course.lng <= bounds[1][1] && course.lng != 21.477857921289853
     );
 
   const courseMarkersJson = JSON.stringify(courseMarkers);
@@ -247,7 +259,7 @@ const MapScreen = ({ DGcourses }) => {
   );
 };
 
-const ListManagementScreen = ({ allUserLists, setAllUserLists }) => {
+const ListManagementScreen = ({ allUserLists, setAllUserLists, setSelectedList }) => {
   const [newListName, setNewListName] = useState('');
 
   const handleAddUserMadeList = () => {
@@ -262,6 +274,7 @@ const ListManagementScreen = ({ allUserLists, setAllUserLists }) => {
 
   const handleRemoveUserMadeList = (index) => {
     setAllUserLists(prevLists => prevLists.filter((_, i) => i !== index));
+    setSelectedList(null);
   };
 
   return (
@@ -342,6 +355,9 @@ const styles = StyleSheet.create({
   },
   dropDown: {
     width: "80%"
+  },
+  scrollViewContent: {
+    minWidth: "100%",
   },
   courseItem: {
     marginTop: 5,
