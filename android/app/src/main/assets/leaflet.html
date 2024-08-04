@@ -23,53 +23,86 @@
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
   <script>
+    // Initializes the Leaftlet map with a default view.
     var map = L.map('map').setView([63.0, 25.0], 6);
+    // Adds OpenStreetMap tiles to the map.
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
     
+    // Defines the bounds of Finland.
     var bounds = [
         [58.0, 20.0],
         [71.0, 32.0]
       ];
 
     
-
+    // Fits the map to the given bounds.
     map.fitBounds(bounds);
     map.setMaxBounds(bounds);
     map.on('drag', function() {
       map.panInsideBounds(bounds);
     });
 
+    // Initializes a marker cluster group.
     var markers = L.markerClusterGroup();
 
+    // Function for adding markers to the map from the provided courses data.
     function addMarkers(courses) {
       // Clear existing markers
       markers.clearLayers();
 
-      // Add new markers to the cluster group
+      // Add new markers to the cluster group.
       courses.forEach(function(course) {
-         // Check for valid coordinates
+         // Check for valid coordinates.
         L.marker([course.lat, course.lng])
-          .bindPopup(`<b>${course.name}</b><br>Lati: ${course.lat}<br>longi: ${course.lng || 'N/A'}`)
+          .bindPopup(`<b>${course.Fullname}</b><br>Area: ${course.area}<br>City: ${course.city || 'N/A'}`)
           .addTo(markers);
         
       });
 
-      // Add the cluster group to the map
+      // Add the cluster group to the map.
       map.addLayer(markers);
     }
 
-    // Handle messages from WebView
+    // Function for showing a specific marker on the map.
+    function focusOnMarker(marker) {
+      if (marker) {
+        // Set map view to the marker's coordinates with a zoom level of 17.
+        // The last time that I tried this, the zoom level did not work.
+        map.setView([marker.lat, marker.lng], 17);
+
+        // Add a marker at the specified coordinates and open its popup.
+        L.marker([marker.lat, marker.lng])
+          .bindPopup(`<b>${marker.Fullname}</b><br>Area: ${marker.area}<br>City: ${marker.city || 'N/A'}`)
+          .addTo(map)
+          .openPopup();
+      }
+    }
+
+    // Handle messages from WebView.
     window.addEventListener('message', function(event) {
-      if (event.data === 'Courses data injected') {
-        addMarkers(window.courses);
+      try {
+        if (event.data === 'Courses data injected') {
+          // Adds markers to the map when course data is injected.
+          addMarkers(window.courses);
+
+          // Focuss on the selected marker if it exists.
+          focusOnMarker(window.selectedMarker);
+        }
+      } catch (e) {
+        console.error('Error processing message:', e);
       }
     });
 
-    // Call addMarkers directly if courses are already available
+    // Calls addMarkers directly if courses are already available.
     if (window.courses) {
       addMarkers(window.courses);
+    }
+
+    // Calls focusOnMarker directly if a selected marker is already available.
+    if (window.selectedMarker) {
+      focusOnMarker(window.selectedMarker);
     }
   </script>
 </body>
